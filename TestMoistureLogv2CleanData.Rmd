@@ -1,0 +1,108 @@
+---
+title: "TestWithCleanData"
+author: "DJ Prince"
+date: "February 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+```
+
+loading into variable
+
+```{r}
+MoistureLogInfoClean = read.csv("https://raw.githubusercontent.com/DJ-Prince/DataScienceA_7b/master/Moisture%20Analysis%20Log%20v1.1.Jan28-30.csv")
+MoistureLogInfoClean[MoistureLogInfoClean == ""] <- NA
+MoistureLogInfoClean <- MoistureLogInfoClean[complete.cases(MoistureLogInfoClean[,1]),]
+MoistureLogInfoClean <- MoistureLogInfoClean[-1,]
+
+
+```
+
+
+```{r}
+typeof(MoistureLogInfoClean)
+```
+
+
+
+```{r}
+colnames(MoistureLogInfoClean) = c("Date", "Time", "Variety", "Harvest.Batch.ID", "Badge", "Variance", "Days.in.Dry", "Days.in.Cure", "Starting.Weight", "Ending.Weight", "Moisture", "Testing.Temp", "Testing.Time", "Waste.Reported", "Issue.Category", "Issue.Type", "Notes", "extra", "extra1", "extra2", "extra3")
+```
+
+```{r}
+MoistureLogInfoClean
+
+```
+
+
+```{r}
+#hard set graph axis for moisture to moisture - 27.5%
+ #                                   days - 14
+  #                                  min days -7 or 8
+   #                                 only need to generate data on new data
+```
+
+
+
+```{r}
+
+#fullrange=
+testMultiplePlots = MoistureLogInfoClean 
+#%>% filter(Variety == "Snowball S1") 
+testMultiplePlots$Moisture<-levels(testMultiplePlots$Moisture)[testMultiplePlots$Moisture]
+testMultiplePlots$Moisture<-as.numeric(testMultiplePlots$Moisture)
+
+testMultiplePlots$Days.in.Dry<-levels(testMultiplePlots$Days.in.Dry)[testMultiplePlots$Days.in.Dry]
+testMultiplePlots$Days.in.Dry<-as.numeric(testMultiplePlots$Days.in.Dry)
+
+
+ggplot(testMultiplePlots, aes(Days.in.Dry, Moisture, color = Harvest.Batch.ID)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + geom_hline(yintercept = 9) +
+ # scale_color_manual(values = c("blue", "red", "orange", "green", "purple")) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+ 
+
+
+```
+
+
+
+```{r}
+VarianceMoisture = MoistureLogInfoClean 
+#%>% filter(Variety == "Snowball S1") 
+VarianceMoisture$Variance<-levels(VarianceMoisture$Variance)[VarianceMoisture$Variance]
+VarianceMoisture$Variance<-as.numeric(VarianceMoisture$Variance)
+
+VarianceMoisture$Starting.Weight<-levels(VarianceMoisture$Starting.Weight)[VarianceMoisture$Starting.Weight]
+VarianceMoisture$Starting.Weight<-as.numeric(VarianceMoisture$Starting.Weight)
+
+
+ggplot(VarianceMoisture, aes(y = Variance, x = Starting.Weight, color = Harvest.Batch.ID)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + geom_hline(yintercept = 0) +
+  facet_wrap(~Date) +
+ # scale_color_manual(values = c("blue", "red", "orange", "green", "purple")) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+```
+
+
+```{r}
+NumEquipIssues = MoistureLogInfoClean %>% filter(Issue.Category == "Equipment") %>% summarize(count = n())
+NumQualIssues = MoistureLogInfoClean %>% filter(Issue.Category == "Quality") %>% summarize(count = n())
+```
+
+There is 'NumEquipIssues' in the 
+
+
+
