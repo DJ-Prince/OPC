@@ -1,0 +1,119 @@
+---
+title: "Test1"
+author: "DJ Prince"
+date: "January 25, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+```
+
+
+```{r}
+MoistureLogInfo = read.csv("https://raw.githubusercontent.com/DJ-Prince/DataScienceA_7b/master/Copy%20of%20Moisture%20Analysis%20Log%20(3).csv")
+```
+
+
+```{r}
+typeof(MoistureLogInfo)
+```
+
+
+```{r}
+
+colnames(MoistureLogInfo) = c("Date", "Time", "Variety", "Harvest.Batch.ID", "Badge", "Variance", "Days.in.Dry", "Days.in.Cure", "Starting.Weight", "Ending.Weight", "Moisture", "Testing.Temp", "Testing.Time", "Waste.Reported", "extra", "issues")
+```
+
+```{r}
+MoistureLogInfo
+```
+
+```{r}
+MoistureLogInfoClean <- dplyr::filter(MoistureLogInfo, !grepl("%",Moisture))
+
+
+```
+
+```{r}
+MoistureLogInfoClean
+```
+
+```{r}
+#str(testShark)
+testShark = MoistureLogInfoClean %>% filter(Variety == "SharkShock" | Variety == "SHARKSHOCK" | Variety == "Shark Shock") 
+testShark$Moisture<-levels(testShark$Moisture)[testShark$Moisture]
+testShark$Moisture<-as.numeric(testShark$Moisture)
+
+
+
+
+
+ggplot(testShark, aes(Days.in.Dry, Moisture)) +
+  geom_point() + geom_smooth(method = "lm") + geom_hline(yintercept = 10)
+``` 
+
+
+```{r}
+testACDC = MoistureLogInfoClean %>% filter(Variety == "ACDC" | Variety == "acdc") 
+testACDC$Moisture<-levels(testACDC$Moisture)[testACDC$Moisture]
+testACDC$Moisture<-as.numeric(testACDC$Moisture)
+
+
+
+
+ggplot(testACDC, aes(Days.in.Dry, Moisture)) +
+  geom_point() + geom_smooth(method = "lm") + geom_hline(yintercept = 10)
+```
+
+Attempt to combine data based on strains and Harvest data.
+
+```{r}
+testMultiplePlots = MoistureLogInfoClean %>% filter(Variety == "SharkShock" | Variety == "SHARKSHOCK" | Variety == "Shark Shock" | Variety == "ACDC") 
+testMultiplePlots$Moisture<-levels(testMultiplePlots$Moisture)[testMultiplePlots$Moisture]
+testMultiplePlots$Moisture<-as.numeric(testMultiplePlots$Moisture)
+
+ggplot(testMultiplePlots, aes(Days.in.Dry, Moisture, color = Harvest.Batch.ID)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE, linetype = "dashed") + geom_hline(yintercept = 10) +
+  scale_color_manual(values = c("blue", "red", "orange", "green", "purple"))
+
+
+```
+
+```{r}
+#fullrange=
+testMultiplePlots = MoistureLogInfoClean %>% filter(Variety == "SharkShock" | Variety == "SHARKSHOCK" | Variety == "Shark Shock" | Variety == "ACDC") 
+testMultiplePlots$Moisture<-levels(testMultiplePlots$Moisture)[testMultiplePlots$Moisture]
+testMultiplePlots$Moisture<-as.numeric(testMultiplePlots$Moisture)
+
+ggplot(testMultiplePlots, aes(Days.in.Dry, Moisture, color = Harvest.Batch.ID)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + geom_hline(yintercept = 10) +
+  scale_color_manual(values = c("blue", "red", "orange", "green", "purple"))
+
+
+```
+
+
+
+
+gotta clean data to make cure work
+
+```{r}
+
+
+testMultiplePlots$Days.in.Cure<-levels(testMultiplePlots$Days.in.Cure)[testMultiplePlots$Days.in.Cure]
+testMultiplePlots$Days.in.Cure<-as.numeric(testMultiplePlots$Days.in.Cure)
+
+testMultiplePlots
+
+ggplot(testMultiplePlots, aes(Days.in.Cure, Moisture, color = Harvest.Batch.ID)) +
+  geom_point() + geom_smooth(method = "lm") + geom_hline(yintercept = 10)
+```
+
+

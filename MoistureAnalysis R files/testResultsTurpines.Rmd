@@ -1,0 +1,23 @@
+---
+title: "Untitled"
+author: "DJ Prince"
+date: "February 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+testInfo = read_csv("https://raw.githubusercontent.com/DJ-Prince/OPC/master/0000002701%20I.csv")
+testInfo[testInfo == ""] <- NA
+testInfo <- testInfo[complete.cases(testInfo[,1]),]
+testInfo <- testInfo[-1,]
+```
+
+```{r}
+testInfo
+
+```
+

@@ -1,0 +1,189 @@
+---
+title: "TestWithCleanData"
+author: "DJ Prince"
+date: "February 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+
+```
+
+
+```{r}
+options(readr.num_columns = 0)
+```
+
+
+```{r}
+oldw <- getOption("warn")
+options(warn = -1)
+```
+
+
+```{r echo=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+library(ggrepel)
+```
+
+
+
+```{r}
+MoistureLogInfo = read_csv("https://raw.githubusercontent.com/DJ-Prince/OPC/master/MoistureAnalysisLog/Moisture%20Analysis%20Log%20v1.1%20Jan%2029-Feb12.csv")
+
+#read_csv
+MoistureLogInfo[MoistureLogInfo == ""] <- NA
+MoistureLogInfo <- MoistureLogInfo[complete.cases(MoistureLogInfo[,1]),]
+MoistureLogInfo <- MoistureLogInfo[-1,]
+
+colnames(MoistureLogInfo) = c("Date", "Time", "Variety", "Harvest.Batch.ID", "Moisture.Status", "Badge", "Variance", "Moisture", "Days.in.Dry", "Days.in.Cure", "Starting.Weight", "Ending.Weight", "Testing.Temp", "Testing.Time", "Waste.Reported", "Issue.Category", "Issue.Type", "Notes")
+
+
+
+```
+
+
+```{r}
+#typeof(MoistureLogInfoClean)
+```
+
+
+
+```{r}
+#Various cleaning steps are done here, including changing data into the correct type and filtering on completion status.
+
+MoistureLogInfo$Moisture <- as.numeric(MoistureLogInfo$Moisture)
+MoistureLogInfo$Days.in.Dry <- as.numeric(MoistureLogInfo$Days.in.Dry)
+MoistureLogInfo$Days.in.Cure <- as.numeric(MoistureLogInfo$Days.in.Cure)
+MoistureLogInfo$Variance <- as.numeric(MoistureLogInfo$Variance)
+MoistureLogInfo$Starting.Weight <- as.numeric(MoistureLogInfo$Starting.Weight)
+MoistureLogInfo$Ending.Weight <- as.numeric(MoistureLogInfo$Ending.Weight)
+MoistureLogInfo$Testing.Temp <- as.numeric(MoistureLogInfo$Testing.Temp)
+MoistureLogInfo$Waste.Reported <- as.numeric(MoistureLogInfo$Waste.Reported)
+MoistureLogInfo$Date <- as.Date(MoistureLogInfo$Date, format = "%m/%d/%Y")
+MoistureLogInfo <- MoistureLogInfo %>% mutate(TotalDays = (Days.in.Dry + Days.in.Cure))
+
+
+
+MoistureLogInfoClean <- MoistureLogInfo %>% filter(Moisture.Status != "Complete")
+MoistureLogInfoCompleted <- MoistureLogInfo %>% filter(Moisture.Status == "Complete")
+```
+
+
+```{r}
+MoistureLogInfoCompleted
+
+```
+
+
+<h1>Line graph for moisture levels compared to days in dry</h1>
+
+```{r fig.height=12, fig.width=12}
+
+testMultiplePlots = MoistureLogInfoClean %>% filter(Days.in.Cure == 0) 
+
+
+ggplot(testMultiplePlots, aes(Days.in.Dry, Moisture, label = Moisture, group = 1)) +
+  facet_wrap(~Variety, scales = "free_x") +
+  geom_point() +  
+  geom_line(data=testMultiplePlots[!is.na(testMultiplePlots$Moisture),], color = "blue") +
+  geom_hline(yintercept = 9) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  geom_label_repel(aes(label=ifelse(Moisture<10.5,Moisture,'')),hjust=1,vjust=-2)
+
+```
+
+
+<h1>Moisture Levels compared to days in dry for all strains</h1>
+
+```{r fig.height=12, fig.width=12}
+
+testMultiplePlots = MoistureLogInfoClean %>% filter(Days.in.Cure == 0)
+
+ggplot(testMultiplePlots, aes(Days.in.Dry, Moisture, label = Moisture)) +
+  facet_wrap(~Variety, scales = "free_x") +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + geom_hline(yintercept = 9) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  geom_label_repel(aes(label=ifelse(Moisture<10.5,Moisture,'')),hjust=1,vjust=-2)
+
+```
+
+<h1>Count of issues</h1>
+
+```{r}
+NumEquipIssues = MoistureLogInfoClean %>% filter(Issue.Category == "Equipment") %>% summarize(count = n())
+NumQualIssues = MoistureLogInfoClean %>% filter(Issue.Category == "Quality") %>% summarize(count = n())
+
+```
+
+There are `r NumEquipIssues` Equipment Issues and `r NumQualIssues` Quality issues
+
+
+<h1>List of strains that are ready for harvest</h1>
+
+```{r}
+ReadyToHarvest = MoistureLogInfoClean
+
+ReadyToHarvest = ReadyToHarvest %>% filter(Moisture <= 10)
+
+
+print(select(ReadyToHarvest, Variety, Harvest.Batch.ID, Moisture, Notes), n = 1e3)
+```
+
+<h1>List of strains that have a recording two days ago (Need tested today)</h1>
+
+```{r}
+NeedTested = MoistureLogInfoClean
+
+#Take max date of each strain and compare weith sys date
+NeedTested = NeedTested %>% filter(as.Date(Sys.Date(), "%m/%d/%Y") - as.Date(NeedTested$Date, "%m/%d/%Y") == 2)
+
+print(select(NeedTested, Date, Variety, Harvest.Batch.ID, Moisture, Notes), n = 1e3)
+
+```
+
+
+
+<h1>LifeCycle of each strain</h1>
+
+```{r fig.width= 12, fig.height= 12}
+testMultiplePlots = MoistureLogInfoClean 
+
+
+
+ggplot(testMultiplePlots, aes(TotalDays, Moisture, label = Moisture)) +
+  facet_wrap(~Variety, scales = "free_x") +
+  geom_point() + geom_smooth(method = "lm", se = FALSE, linetype = "dashed") + geom_hline(yintercept = 9) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  geom_label_repel(aes(label=ifelse(Moisture<10.5,Moisture,'')),hjust=1,vjust=-2)
+
+```
+
+
+
+
+
+<h1>Starting weight compared to initial moisture reading</h1>
+
+```{r fig.height=12, fig.width=12}
+WeightMoisture = MoistureLogInfoClean %>% filter(Days.in.Dry == 2)
+
+ggplot(WeightMoisture, aes(y = Moisture, x = Starting.Weight)) +
+  geom_point() + geom_smooth(method = "lm", se = FALSE) + geom_hline(yintercept = 9) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+```
+
+
+```{r}
+options(warn = oldw)
+```
+
+
